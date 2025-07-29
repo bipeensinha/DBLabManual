@@ -1,0 +1,234 @@
+Absolutely! Here's a clear step-by-step guide to building a simple Spring Boot + JPA authentication app using IntelliJ Community Edition.
+
+✅ Goal
+Create a login-protected app using:
+
+Spring Boot
+
+Spring Security
+
+JPA + H2 (in-memory DB)
+
+No .sql files—data added via Java code
+
+🧱 Step-by-Step Setup
+🔹 STEP 1: Create a New Spring Boot Project
+Use https://start.spring.io or IntelliJ's "New Project" wizard.
+
+Add dependencies:
+
+Spring Web
+
+Spring Security
+
+Spring Data JPA
+
+H2 Database
+
+🔹 STEP 2: Create Entity – User.java
+📁 src/main/java/com/example/demo/model/User.java
+
+java
+Copy
+Edit
+package com.example.demo.model;
+
+import jakarta.persistence.*;
+
+@Entity
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;
+    private String password;
+
+    // Getters and setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}
+🔹 STEP 3: Create Repository – UserRepository.java
+📁 src/main/java/com/example/demo/repository/UserRepository.java
+
+java
+Copy
+Edit
+package com.example.demo.repository;
+
+import com.example.demo.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
+}
+🔹 STEP 4: Add User at Startup – DataLoader.java
+📁 src/main/java/com/example/demo/DataLoader.java
+
+java
+Copy
+Edit
+package com.example.demo;
+
+import com.example.demo.model.User;
+import com.example.demo.repository.UserRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+@Configuration
+public class DataLoader {
+
+    @Bean
+    CommandLineRunner init(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+        return args -> {
+            if (userRepository.findByUsername("user1") == null) {
+                User user = new User();
+                user.setUsername("user1");
+                user.setPassword(passwordEncoder.encode("password"));
+                userRepository.save(user);
+                System.out.println("User 'user1' with password 'password' created.");
+            }
+        };
+    }
+}
+🔹 STEP 5: Implement CustomUserDetailsService
+📁 src/main/java/com/example/demo/service/CustomUserDetailsService.java
+
+java
+Copy
+Edit
+package com.example.demo.service;
+
+import com.example.demo.model.User;
+import com.example.demo.repository.UserRepository;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository repo;
+
+    public CustomUserDetailsService(UserRepository repo) {
+        this.repo = repo;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+        User user = repo.findByUsername(username);
+        if (user == null) throw new UsernameNotFoundException("User not found");
+
+        return new org.springframework.security.core.userdetails.User(
+                user.getUsername(),
+                user.getPassword(),
+                Collections.emptyList()
+        );
+    }
+}
+🔹 STEP 6: Configure Spring Security – SecurityConfig.java
+📁 src/main/java/com/example/demo/config/SecurityConfig.java
+
+java
+Copy
+Edit
+package com.example.demo.config;
+
+import org.springframework.context.annotation.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.*;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+@Configuration
+public class SecurityConfig {
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf().disable()
+            .authorizeHttpRequests()
+                .requestMatchers("/public").permitAll()
+                .anyRequest().authenticated()
+            .and()
+                .formLogin();
+        return http.build();
+    }
+}
+🔹 STEP 7: Add a Controller – HelloController.java
+📁 src/main/java/com/example/demo/controller/HelloController.java
+
+java
+Copy
+Edit
+package com.example.demo.controller;
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+public class HelloController {
+
+    @GetMapping("/public")
+    public String publicEndpoint() {
+        return "This is a public page.";
+    }
+
+    @GetMapping("/secure")
+    public String secureEndpoint() {
+        return "This is a protected page!";
+    }
+}
+🔹 STEP 8: Update application.properties
+📁 src/main/resources/application.properties
+
+properties
+Copy
+Edit
+spring.h2.console.enabled=true
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.jpa.hibernate.ddl-auto=create
+🔹 STEP 9: Run Your App
+Run the app.
+
+Open browser:
+
+H2 Console: http://localhost:8080/h2-console
+
+JDBC URL: jdbc:h2:mem:testdb
+
+User: sa, Password: (leave blank)
+
+App endpoints:
+
+http://localhost:8080/public → No login needed
+
+http://localhost:8080/secure → Prompts login
+
+🔐 Login Info:
+Username: user1
+
+Password: password
+
