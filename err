@@ -1,0 +1,2 @@
+Caused by: org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "select u1_0.id,u1_0.password,u1_0.username from [*]user u1_0 where u1_0.username=?"; expected "identifier"; SQL statement:
+select u1_0.id,u1_0.password,u1_0.username from user u1_0 where u1_0.username=? [42001-232]
