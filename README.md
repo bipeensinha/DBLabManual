@@ -1,3 +1,8 @@
+# If React Is Missing 
+<img width="488" height="374" alt="image" src="https://github.com/user-attachments/assets/aeeee751-cc9e-4440-b6b0-23505569fdb3" />
+<img width="526" height="319" alt="image" src="https://github.com/user-attachments/assets/54029ff9-12c5-4e67-9eba-e6490e410a4a" />
+
+
 # DBLabManual
 Java , React, Springboot Lab Manuals for Software Developer
 
